@@ -1,0 +1,143 @@
+'use client';
+
+import { FC, useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { motion } from 'framer-motion';
+import { api } from '@/lib/api';
+import { useStore } from '@/store/useStore';
+
+export const BirthDetailsForm: FC = () => {
+    const { publicKey } = useWallet();
+    const { setUser, setLoading } = useStore();
+
+    const [formData, setFormData] = useState({
+        dob: '',
+        birthTime: '',
+        birthPlace: ''
+    });
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!publicKey) {
+            setError('Please connect your wallet first');
+            return;
+        }
+
+        setError(null);
+        setLoading(true);
+
+        try {
+            const result = await api.registerUser({
+                walletAddress: publicKey.toBase58(),
+                ...formData
+            });
+
+            setUser(result.user);
+
+            // Scroll to next section
+            document.getElementById('horoscope-section')?.scrollIntoView({ behavior: 'smooth' });
+        } catch (err: any) {
+            setError(err.message || 'Failed to register. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const isFormValid = formData.dob && formData.birthTime && formData.birthPlace;
+
+    return (
+        <section id="birth-form" className="min-h-screen flex items-center justify-center py-20 px-4 relative">
+            {/* Background Glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] -z-10"></div>
+
+            <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                viewport={{ once: true }}
+                className="w-full max-w-lg"
+            >
+                <div className="glass-panel rounded-3xl p-8 md:p-10 relative overflow-hidden">
+                    {/* Decorative top border */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-50"></div>
+
+                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
+                        Your Birth Details
+                    </h2>
+                    <p className="text-slate-400 text-center mb-10 text-lg">
+                        Align your energy with the cosmos
+                    </p>
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Date of Birth */}
+                        <div className="group">
+                            <label htmlFor="dob" className="block text-sm font-medium text-purple-300 mb-2 ml-1 group-focus-within:text-purple-400 transition-colors">
+                                Date of Birth
+                            </label>
+                            <input
+                                type="date"
+                                id="dob"
+                                required
+                                value={formData.dob}
+                                onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                                className="w-full px-5 py-4 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all outline-none hover:bg-slate-900/70"
+                            />
+                        </div>
+
+                        {/* Birth Time */}
+                        <div className="group">
+                            <label htmlFor="birthTime" className="block text-sm font-medium text-purple-300 mb-2 ml-1 group-focus-within:text-purple-400 transition-colors">
+                                Time of Birth
+                            </label>
+                            <input
+                                type="time"
+                                id="birthTime"
+                                required
+                                value={formData.birthTime}
+                                onChange={(e) => setFormData(prev => ({ ...prev, birthTime: e.target.value }))}
+                                className="w-full px-5 py-4 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all outline-none hover:bg-slate-900/70"
+                            />
+                        </div>
+
+                        {/* Birth Place */}
+                        <div className="group">
+                            <label htmlFor="birthPlace" className="block text-sm font-medium text-purple-300 mb-2 ml-1 group-focus-within:text-purple-400 transition-colors">
+                                Place of Birth
+                            </label>
+                            <input
+                                type="text"
+                                id="birthPlace"
+                                required
+                                placeholder="e.g., New Delhi, India"
+                                value={formData.birthPlace}
+                                onChange={(e) => setFormData(prev => ({ ...prev, birthPlace: e.target.value }))}
+                                className="w-full px-5 py-4 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all outline-none hover:bg-slate-900/70"
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm flex items-center gap-2">
+                                <span className="text-lg">⚠️</span> {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={!isFormValid || !publicKey}
+                            className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-slate-700 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all duration-300 shadow-lg shadow-purple-900/20 hover:shadow-purple-600/40 hover:-translate-y-1 active:translate-y-0"
+                        >
+                            Continue Journey →
+                        </button>
+                    </form>
+
+                    <p className="text-xs text-slate-500 text-center mt-8 flex items-center justify-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                        Encrypted & Secure on Solana
+                    </p>
+                </div>
+            </motion.div>
+        </section>
+    );
+};
